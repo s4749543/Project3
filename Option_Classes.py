@@ -59,8 +59,6 @@ class AmericanPutOption(Option):
 
 # Up-and-In Barrier Call Option
 
-# option_models/barrier.py
-
 class UpAndInCallOption(Option):
     def __init__(self, barrier, simulations=10000, steps=252, *args, **kwargs):
         super().__init__(*args, **kwargs)
