@@ -1,5 +1,7 @@
 pandas
 numpy
-math
 tabulate
 scipy
+yfinance
+requests
+matplotlib
