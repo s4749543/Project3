@@ -1,26 +1,31 @@
-
-import numpy as np
+# Define base class for pricing options
 from scipy.stats import norm
+import numpy as np
 
 class Option:
     def __init__(self, ticker, spot, strike, expiry, rate, vol, option_type="call"):
         self.ticker = ticker
         self.spot = spot
         self.strike = strike
-        self.expiry = expiry
+        self.expiry = expiry  # in years
         self.rate = rate
         self.vol = vol
         self.option_type = option_type
+
+# Define European Option (Black-Scholes)
 
 class EuropeanOption(Option):
     def price(self):
         S, K, T, r, sigma = self.spot, self.strike, self.expiry, self.rate, self.vol
         d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
         d2 = d1 - sigma * np.sqrt(T)
+
         if self.option_type == "call":
             return S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
         else:
-            return K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+            return K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1) #returns put option
+
+# Define American Option (Bionomial Tree Pricing)
 
 class AmericanPutOption(Option):
     def __init__(self, *args, steps=100, **kwargs):
@@ -50,6 +55,9 @@ class AmericanPutOption(Option):
                 option_tree[i, j] = max(hold, exercise)
 
         return option_tree[0, 0]
+
+
+# Up-and-In Barrier Call Option
 
 class UpAndInCallOption(Option):
     def __init__(self, barrier, simulations=10000, steps=252, *args, **kwargs):
@@ -82,29 +90,32 @@ class UpAndInCallOption(Option):
 
         return np.mean(payoffs)
 
+# European Basket Call Option
+
+# option_models/basket.py
+
 class BasketCallOption(Option):
-    def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, vol, corr_matrix, **kwargs):
+    def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, vol, corr_matrix, simulations=10000):
         super().__init__(ticker="BASKET", spot=spot_prices, strike=strike, expiry=expiry,
                          rate=rate, vol=vol, option_type="call")
         self.tickers = tickers
         self.weights = np.array(weights)
         self.corr = np.array(corr_matrix)
+        self.simulations = simulations
 
     def price(self):
         S = np.array(self.spot)
-        w = np.array(self.weights)
         vols = np.array(self.vol)
-        cov_matrix = np.outer(vols, vols) * self.corr
+        cov = np.outer(vols, vols) * self.corr
+        L = np.linalg.cholesky(cov)
+        disc = np.exp(-self.rate * self.expiry)
 
-        S_eff = np.dot(w, S)
-        sigma_eff = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
+        payoffs = []
+        for _ in range(self.simulations):
+            Z = np.random.normal(size=len(S))
+            correlated = L @ Z
+            S_T = S * np.exp((self.rate - 0.5 * vols**2) * self.expiry + correlated * np.sqrt(self.expiry))
+            basket = np.dot(self.weights, S_T)
+            payoffs.append(disc * max(basket - self.strike, 0))
 
-        K = self.strike
-        T = self.expiry
-        r = self.rate
-
-        d1 = (np.log(S_eff / K) + (r + 0.5 * sigma_eff ** 2) * T) / (sigma_eff * np.sqrt(T))
-        d2 = d1 - sigma_eff * np.sqrt(T)
-
-        price = S_eff * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
-        return price
+        return np.mean(payoffs)
