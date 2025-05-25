@@ -21,12 +21,6 @@ def get_close_price(ticker, date_str):
     
     return data['Close'].iloc[-1].item()
 
-Ticker = "BHP.AX"  # Example ticker for BHP Group Limited on the ASX
-date = "2025-05-16"  # Example date
-
-bhp_close_price = get_close_price(Ticker, date)
-print(bhp_close_price)
-
 
 def get_volatility(ticker, end_date, window=252):
     end = pd.to_datetime(end_date) + pd.Timedelta(days=1)
@@ -35,8 +29,6 @@ def get_volatility(ticker, end_date, window=252):
     volatility = returns[-window:].std() * (252**0.5)
     return volatility.item() 
 
-bhp_volatility = get_volatility(Ticker, date)
-print(bhp_volatility)
 
 
 def get_correlation_matrix(tickers, window=60, end_date=None):
@@ -57,10 +49,6 @@ def get_correlation_matrix(tickers, window=60, end_date=None):
         print(f"Error calculating correlation matrix: {e}")
         return pd.DataFrame()
     
-tickers = ["BHP.AX", "CBA.AX"]
-bhp_cba_corr = get_correlation_matrix(tickers, window=60, end_date=date)
-print(bhp_cba_corr)
-
 
 
 def get_all_market_data(tickers, date, window=60):

@@ -95,9 +95,9 @@ class UpAndInCallOption(Option):
 # option_models/basket.py
 
 class BasketCallOption(Option):
-    def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, volatilities, corr_matrix, simulations=10000):
+    def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, vol, corr_matrix, simulations=10000):
         super().__init__(ticker="BASKET", spot=spot_prices, strike=strike, expiry=expiry,
-                         rate=rate, vol=volatilities, option_type="call")
+                         rate=rate, vol=vol, option_type="call")
         self.tickers = tickers
         self.weights = np.array(weights)
         self.corr = np.array(corr_matrix)

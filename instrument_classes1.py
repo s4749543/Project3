@@ -11,6 +11,12 @@ class Instrument:
 
     def get_cash_flows(self):
         return self.cash_flows
+    
+    def get_price(self):
+        return self.price
+    
+    def get_face_value(self):
+        return self.face_value
 
 
 class Bank_bill(Instrument):
@@ -54,3 +60,10 @@ class Portfolio:
 
     def get_cash_flows(self):
         return self.cash_flows
+    
+    def get_bank_bills(self):
+        return self.bills
+
+    def get_bonds(self):
+        return self.bonds
+
