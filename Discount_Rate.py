@@ -1,6 +1,6 @@
 
 # This module builds a discount curve from bank bills and bonds, and provides functions to retrieve discount factors and zero rates
-from instrument_classes import Bank_bill, Bond, Portfolio
+from instrument_classes1 import Bank_bill, Bond, Portfolio
 from curve_classes_and_functions import YieldCurve
 
 # Builds bootstrapped discount curve from bank bills and bonds. 
@@ -18,7 +18,7 @@ def build_discount_curve():
     bond1.set_cash_flows()
     bond2.set_cash_flows()
     bond3.set_cash_flows()
-
+ 
     # Step 2: Add to portfolio
     portfolio = Portfolio()
     portfolio.add_bank_bill(bill1)

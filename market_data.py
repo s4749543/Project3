@@ -29,12 +29,15 @@ print(bhp_close_price)
 
 
 def get_volatility(ticker, end_date, window=252):
-    data = yf.download(ticker, end=pd.to_datetime(date) + pd.Timedelta(days=1))
+    end = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+    data = yf.download(ticker, end=end)
     returns = data['Close'].pct_change().dropna()
-    return returns[-window:].std() * (252**0.5)
+    volatility = returns[-window:].std() * (252**0.5)
+    return volatility.item() 
 
 bhp_volatility = get_volatility(Ticker, date)
 print(bhp_volatility)
+
 
 def get_correlation_matrix(tickers, window=60, end_date=None):
     try:
@@ -53,6 +56,12 @@ def get_correlation_matrix(tickers, window=60, end_date=None):
     except Exception as e:
         print(f"Error calculating correlation matrix: {e}")
         return pd.DataFrame()
+    
+tickers = ["BHP.AX", "CBA.AX"]
+bhp_cba_corr = get_correlation_matrix(tickers, window=60, end_date=date)
+print(bhp_cba_corr)
+
+
 
 def get_all_market_data(tickers, date, window=60):
     spot_prices = {ticker: get_close_price(ticker, date) for ticker in tickers}
