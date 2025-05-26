@@ -1,9 +1,8 @@
-
 import numpy as np
 from scipy.stats import norm
 
 class Option:
-    def __init__(self, ticker, spot, strike, expiry, rate, vol, option_type="call"):
+    def __init__(self, ticker, spot, strike, expiry, rate, vol, option_type="call", dividend_yield=0.0):
         self.ticker = ticker
         self.spot = spot
         self.strike = strike
@@ -11,16 +10,23 @@ class Option:
         self.rate = rate
         self.vol = vol
         self.option_type = option_type
+        self.dividend_yield = dividend_yield
+
+    def get_dividend_yield(self):
+        return self.dividend_yield
+
+    def set_dividend_yield(self, q):
+        self.dividend_yield = q
 
 class EuropeanOption(Option):
     def price(self):
-        S, K, T, r, sigma = self.spot, self.strike, self.expiry, self.rate, self.vol
-        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        S, K, T, r, sigma, q = self.spot, self.strike, self.expiry, self.rate, self.vol, self.dividend_yield
+        d1 = (np.log(S / K) + (r - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
         d2 = d1 - sigma * np.sqrt(T)
         if self.option_type == "call":
-            return S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+            return S * np.exp(-q * T) * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
         else:
-            return K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+            return K * np.exp(-r * T) * norm.cdf(-d2) - S * np.exp(-q * T) * norm.cdf(-d1)
 
 class AmericanPutOption(Option):
     def __init__(self, *args, steps=100, **kwargs):
@@ -28,11 +34,11 @@ class AmericanPutOption(Option):
         self.steps = steps
 
     def price(self):
-        S, K, T, r, sigma, N = self.spot, self.strike, self.expiry, self.rate, self.vol, self.steps
+        S, K, T, r, sigma, N, q = self.spot, self.strike, self.expiry, self.rate, self.vol, self.steps, self.dividend_yield
         dt = T / N
         u = np.exp(sigma * np.sqrt(dt))
         d = 1 / u
-        p = (np.exp(r * dt) - d) / (u - d)
+        p = (np.exp((r - q) * dt) - d) / (u - d)
         discount = np.exp(-r * dt)
 
         stock_tree = np.zeros((N + 1, N + 1))
@@ -61,6 +67,7 @@ class UpAndInCallOption(Option):
     def price(self):
         dt = self.expiry / self.steps
         disc = np.exp(-self.rate * self.expiry)
+        q = self.dividend_yield
         payoffs = []
 
         for _ in range(self.simulations):
@@ -69,7 +76,7 @@ class UpAndInCallOption(Option):
 
             for _ in range(self.steps):
                 Z = np.random.normal()
-                S_next = prices[-1] * np.exp((self.rate - 0.5 * self.vol ** 2) * dt + self.vol * np.sqrt(dt) * Z)
+                S_next = prices[-1] * np.exp((self.rate - q - 0.5 * self.vol ** 2) * dt + self.vol * np.sqrt(dt) * Z)
                 prices.append(S_next)
                 if S_next >= self.barrier:
                     barrier_hit = True
@@ -83,9 +90,9 @@ class UpAndInCallOption(Option):
         return np.mean(payoffs)
 
 class BasketCallOption(Option):
-    def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, vol, corr_matrix, **kwargs):
+    def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, vol, corr_matrix, dividend_yield=0.0, **kwargs):
         super().__init__(ticker="BASKET", spot=spot_prices, strike=strike, expiry=expiry,
-                         rate=rate, vol=vol, option_type="call")
+                         rate=rate, vol=vol, option_type="call", dividend_yield=dividend_yield)
         self.tickers = tickers
         self.weights = np.array(weights)
         self.corr = np.array(corr_matrix)
@@ -95,6 +102,7 @@ class BasketCallOption(Option):
         w = np.array(self.weights)
         vols = np.array(self.vol)
         cov_matrix = np.outer(vols, vols) * self.corr
+        q = self.dividend_yield
 
         S_eff = np.dot(w, S)
         sigma_eff = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
@@ -103,8 +111,8 @@ class BasketCallOption(Option):
         T = self.expiry
         r = self.rate
 
-        d1 = (np.log(S_eff / K) + (r + 0.5 * sigma_eff ** 2) * T) / (sigma_eff * np.sqrt(T))
+        d1 = (np.log(S_eff / K) + (r - q + 0.5 * sigma_eff ** 2) * T) / (sigma_eff * np.sqrt(T))
         d2 = d1 - sigma_eff * np.sqrt(T)
 
-        price = S_eff * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+        price = S_eff * np.exp(-q * T) * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
         return price
