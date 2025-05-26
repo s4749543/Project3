@@ -1,0 +1,37 @@
+Necessary: 
+
+Master list of things to do:
+     Acquire bond data
+    Acquire stock implied volatilities 
+
+    Code in assumptions of dividends into the pricing 
+    + Find expected dividend yield & Integrate into the option classes
+        (ryan)
+
+    Find model for implied volatilities then interpolate based off of this (important), need to interpolate the strikes and the dates to find said volatility
+        Dylan
+
+    Hedging Code -- code a way to hedge the parameters
+        Provide Justification
+        (Christian)
+        Find most relevant hedging parameters for each of the trades
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+Monday:
+    Acquire bond data --
+    Acquire stock implied volatilities --
+    Code in assumptions of dividends into the pricing -- (ryan)
+    Find expected dividend yield & Integrate into option classes
+
+
+Tuesday:
+    Design and Model Justification
+        Why do we have
+
+
+
+Design and Model 
