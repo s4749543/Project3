@@ -1,30 +1,31 @@
-
+import numpy as np
 import copy
 
 class HedgingCalculator:
-    def __init__(self, bump=0.01, dt=1/252, dr=0.0001):
-        self.bump = bump
-        self.dt = dt
-        self.dr = dr
+    def __init__(self, spot_bump_pct=0.01, vol_bump_pct=0.01, dt_days=5, rate_bump_pct=0.0001):
+        self.spot_bump_pct = spot_bump_pct      # 1% bump for delta/gamma
+        self.vol_bump_pct = vol_bump_pct        # 1% bump for vega (relative to vol)
+        self.dt = dt_days / 252                 # 5 trading days (smoothed theta)
+        self.rate_bump_pct = rate_bump_pct      # 1 basis point bump (for rho)
 
     def calculate_delta_fd(self, option):
         S = option.spot
-        h = self.bump
+        h = self.spot_bump_pct * np.array(S) if isinstance(S, list) else self.spot_bump_pct * S
 
         if isinstance(S, list):
             deltas = []
             for i in range(len(S)):
-                bumped_up = S.copy()
-                bumped_up[i] += h
+                bumped_up = copy.deepcopy(S)
+                bumped_up[i] += h[i]
                 option.spot = bumped_up
                 up = option.price()
 
-                bumped_down = S.copy()
-                bumped_down[i] -= h
+                bumped_down = copy.deepcopy(S)
+                bumped_down[i] -= h[i]
                 option.spot = bumped_down
                 down = option.price()
 
-                deltas.append((up - down) / (2 * h))
+                deltas.append((up - down) / (2 * h[i]))
 
             option.spot = S
             return deltas
@@ -38,25 +39,25 @@ class HedgingCalculator:
 
     def calculate_gamma_fd(self, option):
         S = option.spot
-        h = self.bump
+        h = self.spot_bump_pct * np.array(S) if isinstance(S, list) else self.spot_bump_pct * S
 
         if isinstance(S, list):
             gammas = []
             for i in range(len(S)):
-                bumped_up = S.copy()
-                bumped_up[i] += h
+                bumped_up = copy.deepcopy(S)
+                bumped_up[i] += h[i]
                 option.spot = bumped_up
                 up = option.price()
 
                 option.spot = S
                 base = option.price()
 
-                bumped_down = S.copy()
-                bumped_down[i] -= h
+                bumped_down = copy.deepcopy(S)
+                bumped_down[i] -= h[i]
                 option.spot = bumped_down
                 down = option.price()
 
-                gammas.append((up - 2 * base + down) / (h ** 2))
+                gammas.append((up - 2 * base + down) / (h[i] ** 2))
 
             option.spot = S
             return gammas
@@ -72,50 +73,61 @@ class HedgingCalculator:
 
     def calculate_vega_fd(self, option):
         sigma = option.vol
-        h = self.bump
+        h = [v * self.vol_bump_pct for v in sigma] if isinstance(sigma, list) else sigma * self.vol_bump_pct
 
         if isinstance(sigma, list):
             vegas = []
             for i in range(len(sigma)):
-                bumped_up = sigma.copy()
-                bumped_up[i] += h
+                bumped_up = copy.deepcopy(sigma)
+                bumped_up[i] += h[i]
                 option.vol = bumped_up
                 up = option.price()
 
-                bumped_down = sigma.copy()
-                bumped_down[i] -= h
+                bumped_down = copy.deepcopy(sigma)
+                bumped_down[i] -= h[i]
                 option.vol = bumped_down
                 down = option.price()
 
-                vegas.append((up - down) / (2 * h))
+                vegas.append((up - down) / (2 * h[i]))
 
             option.vol = sigma
-            return vegas
+            return [v / 100 for v in vegas]
         else:
             option.vol = sigma + h
             up = option.price()
             option.vol = sigma - h
             down = option.price()
             option.vol = sigma
-            return (up - down) / (2 * h)
+            vega = (up - down) / (2 * h)
+            return vega / 100
 
     def calculate_theta_fd(self, option):
         T = option.expiry
         dt = self.dt
-        option.expiry = T - dt
-        value = option.price()
-        option.expiry = T
-        return (option.price() - value) / dt
+
+        if T <= dt:
+            return 0.0  # Too close to expiry
+
+        base = option.price()
+        option.expiry = T + dt
+        price_forward = option.price()
+        option.expiry = T  # Reset expiry
+
+        theta = (base - price_forward) / dt
+        return theta
 
     def calculate_rho_fd(self, option):
         r = option.rate
-        dr = self.dr
+        dr = self.rate_bump_pct
+
         option.rate = r + dr
         up = option.price()
         option.rate = r - dr
         down = option.price()
         option.rate = r
-        return (up - down) / (2 * dr)
+
+        rho = (up - down) / (2 * dr)
+        return rho / 100
 
     def get_all_greeks(self, option, method="fd"):
         if method == "fd":
