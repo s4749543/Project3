@@ -11,8 +11,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 import yfinance as yf
 import importlib
-from simple_discount_curve import get_discount_rate
-from simple_discount_curve import get_discount_factor
+from junk.simple_discount_curve import get_discount_rate
+from junk.simple_discount_curve import get_discount_factor
 
 ticker = "BHP.AX"
 date = "2025-05-16"
