@@ -127,3 +127,4 @@ class BasketCallOption(Option):
 
         price = S_eff * np.exp(-q * T) * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
         return price
+
