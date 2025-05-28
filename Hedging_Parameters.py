@@ -10,7 +10,7 @@ class HedgingCalculator:
 
     def calculate_delta_fd(self, option):
         S = option.spot
-        h = self.spot_bump_pct * np.array(S) if isinstance(S, list) else self.spot_bump_pct * S
+        h = [1.0] * len(S) if isinstance(S, list) else 1.0  # $1 bump
 
         if isinstance(S, list):
             deltas = []
@@ -39,7 +39,7 @@ class HedgingCalculator:
 
     def calculate_gamma_fd(self, option):
         S = option.spot
-        h = self.spot_bump_pct * np.array(S) if isinstance(S, list) else self.spot_bump_pct * S
+        h = [1.0] * len(S) if isinstance(S, list) else 1.0  # $1 bump
 
         if isinstance(S, list):
             gammas = []
