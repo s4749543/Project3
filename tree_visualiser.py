@@ -1,7 +1,11 @@
+# This module provides functions to build and visualize binomial trees for option pricing.
+# It includes a function to generate the stock and option value trees, and a function to plot these trees using networkx and matplotlib.
+
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
+# Constructs the binomial tree for stock prices and option values (American put by default)
 def get_stock_and_option_trees(spot, strike, expiry, rate, vol, steps):
     S, K, T, r, sigma, N = spot, strike, expiry, rate, vol, steps
     dt = T / N
@@ -13,11 +17,13 @@ def get_stock_and_option_trees(spot, strike, expiry, rate, vol, steps):
     stock_tree = np.zeros((N + 1, N + 1))
     option_tree = np.zeros((N + 1, N + 1))
 
+    # Build the stock price tree and initialize option values at maturity
     for i in range(N + 1):
         for j in range(i + 1):
             stock_tree[i, j] = S * (u ** j) * (d ** (i - j))
             option_tree[i, j] = max(K - stock_tree[i, j], 0)
 
+    # Backward induction for option values (American put)
     for i in range(N - 1, -1, -1):
         for j in range(i + 1):
             hold = discount * (p * option_tree[i + 1, j + 1] + (1 - p) * option_tree[i + 1, j])
@@ -26,6 +32,7 @@ def get_stock_and_option_trees(spot, strike, expiry, rate, vol, steps):
 
     return stock_tree, option_tree
 
+# Plots a binomial tree using networkx and matplotlib for visualization
 def plot_binomial_tree_networkx(tree, title="Binomial Tree", color="skyblue"):
     G = nx.DiGraph()
     pos = {}

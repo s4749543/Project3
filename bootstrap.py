@@ -85,7 +85,7 @@ class YieldCurve:
         elif t < self.maturities[0] or t > self.maturities[-1]:
             raise ValueError("Requested maturity is out of curve range")
         else:
-            # Linear interpolation in log DF space
+            
             for i in range(1, len(self.maturities)):
                 if self.maturities[i-1] < t < self.maturities[i]:
                     t0, t1 = self.maturities[i-1], self.maturities[i]
@@ -98,26 +98,36 @@ class YieldCurve:
         return -log(df) / t
 
     def bootstrap(self, portfolio):
+        # Add the initial discount factor for time 0 (present value)
         self.add_discount_factor(0.0, 1.0)
 
+        # Process all bank bills in the portfolio
         for bill in portfolio.get_bank_bills():
+            # For each bill, calculate its maturity and discount factor
             t = bill.get_maturity()
             df = bill.get_price() / bill.get_face_value()
+            # Add the discount factor for this maturity
             self.add_discount_factor(t, df)
 
+        # Process all bonds in the portfolio
         for bond in portfolio.get_bonds():
+            # Get all cash flow dates and amounts for the bond
             dates = bond.get_maturities()
             amounts = bond.get_amounts()
-            pv = 0.0
+            pv = 0.0  # Present value of earlier cash flows
 
+            # For each cash flow (except the last), discount using already bootstrapped factors
             for i in range(1, len(dates) - 1):
                 try:
                     df = self.get_discount_factor(dates[i])
                     pv += amounts[i] * df
                 except ValueError:
+                    # If discount factor is not available, skip (will be bootstrapped later)
                     continue
 
+            # For the final cash flow, solve for the discount factor that matches the bond price
             final_t = dates[-1]
             final_cf = amounts[-1]
             df_final = (bond.get_price() - pv) / final_cf
+            # Add the bootstrapped discount factor for the final maturity
             self.add_discount_factor(final_t, df_final)

@@ -1,8 +1,13 @@
+# This module defines option classes for pricing various types of options.
+# It includes a base Option class and implementations for European, American, Barrier, and Basket options.
+# Each class provides a price() method for computing the option's fair value using appropriate models.
+
 import numpy as np
 from scipy.stats import norm
 
 class Option:
     def __init__(self, ticker, spot, strike, expiry, rate, vol, option_type="call", dividend_yield=0.0):
+        # Base class for options. Stores common attributes.
         self.ticker = ticker
         self.spot = spot
         self.strike = strike
@@ -20,6 +25,7 @@ class Option:
 
 class EuropeanOption(Option):
     def price(self):
+        # Black-Scholes formula for European call/put option pricing
         S, K, T, r, sigma, q = self.spot, self.strike, self.expiry, self.rate, self.vol, self.dividend_yield
         d1 = (np.log(S / K) + (r - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
         d2 = d1 - sigma * np.sqrt(T)
@@ -30,6 +36,7 @@ class EuropeanOption(Option):
 
 class AmericanPutOption(Option):
     def __init__(self, *args, steps=100, **kwargs):
+        # American put option using a binomial tree for early exercise
         super().__init__(*args, **kwargs)
         self.steps = steps
 
@@ -44,11 +51,13 @@ class AmericanPutOption(Option):
         stock_tree = np.zeros((N + 1, N + 1))
         option_tree = np.zeros((N + 1, N + 1))
 
+        # Build stock and option value trees
         for i in range(N + 1):
             for j in range(i + 1):
                 stock_tree[i, j] = S * (u ** j) * (d ** (i - j))
                 option_tree[i, j] = max(K - stock_tree[i, j], 0)
 
+        # Backward induction for early exercise
         for i in range(N - 1, -1, -1):
             for j in range(i + 1):
                 hold = discount * (p * option_tree[i + 1, j + 1] + (1 - p) * option_tree[i + 1, j])
@@ -59,6 +68,7 @@ class AmericanPutOption(Option):
 
 class UpAndInCallOption(Option):
     def __init__(self, barrier, simulations=10000, steps=252, *args, **kwargs):
+        # Barrier option (up-and-in call) priced via Monte Carlo simulation
         super().__init__(*args, **kwargs)
         self.barrier = barrier
         self.simulations = simulations
@@ -91,6 +101,7 @@ class UpAndInCallOption(Option):
 
 class BasketCallOption(Option):
     def __init__(self, tickers, spot_prices, weights, strike, expiry, rate, vol, corr_matrix, dividend_yield=0.0, **kwargs):
+        # Basket call option using an effective Black-Scholes approach
         super().__init__(ticker="BASKET", spot=spot_prices, strike=strike, expiry=expiry,
                          rate=rate, vol=vol, option_type="call", dividend_yield=dividend_yield)
         self.tickers = tickers

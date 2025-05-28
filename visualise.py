@@ -1,8 +1,14 @@
+# This module provides visualization utilities for option pricing sensitivity analysis.
+# It includes functions to plot how option prices change with respect to spot price and volatility
+# for various option types (analytical, barrier, basket), as well as a function to visualize
+# Monte Carlo paths for up-and-in barrier options.
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from Option_Classes import UpAndInCallOption, BasketCallOption
 
+# Plots price sensitivity to spot and volatility for analytical options (e.g., European)
 def plot_spot_vol_sensitivity(option_class, label, base_spot, base_vol, 
                               spot_range=(80, 120, 50), vol_range=(0.1, 0.6, 50), **kwargs):
     """
@@ -17,6 +23,7 @@ def plot_spot_vol_sensitivity(option_class, label, base_spot, base_vol,
     _plot_sensitivity_curves(spot_vals, prices_spot, vol_vals, prices_vol, label)
 
 
+# Plots price sensitivity to spot and volatility for Up-and-In Barrier Call using Monte Carlo
 def plot_spot_vol_sensitivity_barrier(label, base_spot, base_vol, strike, expiry, rate,
                                       option_type, ticker, barrier,
                                       spot_range=(80, 120, 30), vol_range=(0.1, 0.6, 30)):
@@ -44,6 +51,7 @@ def plot_spot_vol_sensitivity_barrier(label, base_spot, base_vol, strike, expiry
     _plot_sensitivity_curves(spot_vals, prices_spot, vol_vals, prices_vol, label)
 
 
+# Plots price sensitivity to spot and volatility for Basket Call Option using Monte Carlo
 def plot_spot_vol_sensitivity_basket(label, base_spots, base_vols, weights, corr_matrix,
                                      strike, expiry, rate, tickers,
                                      spot_range=(80, 120, 30), vol_range=(0.1, 0.6, 30)):
@@ -73,8 +81,7 @@ def plot_spot_vol_sensitivity_basket(label, base_spots, base_vols, weights, corr
     _plot_sensitivity_curves(spot_vals, prices_spot, vol_vals, prices_vol, label)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Internal utility plotter (used by all three)
+# Internal utility plotter for sensitivity curves
 def _plot_sensitivity_curves(spot_vals, prices_spot, vol_vals, prices_vol, label):
     fig, axs = plt.subplots(1, 2, figsize=(14, 5))
 
@@ -94,11 +101,7 @@ def _plot_sensitivity_curves(spot_vals, prices_spot, vol_vals, prices_vol, label
     plt.show()
 
 
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-
+# Plots price sensitivity to a single component's spot and vol for Basket Call (Black-Scholes)
 def plot_spot_vol_sensitivity_basket_bs(label, base_spots, base_vols, weights, corr_matrix,
                                         strike, expiry, rate, ticker, tickers,
                                         spot_range=(80, 120, 50), vol_range=(0.1, 0.6, 50),
@@ -169,7 +172,13 @@ def plot_spot_vol_sensitivity_basket_bs(label, base_spots, base_vols, weights, c
     plt.tight_layout()
     plt.show()
 
+
+# Visualizes Monte Carlo paths for an up-and-in barrier call option
 def visualize_up_and_in_barrier_call(S0, K, T, r, sigma, B, M=100, steps=252, random_seed=42):
+    """
+    Simulates and visualizes sample paths for an up-and-in barrier call option.
+    Shows which paths contribute to payoff, which are knocked in but out-of-the-money, and which never cross the barrier.
+    """
     np.random.seed(random_seed)
     dt = T / steps
     time_grid = np.linspace(0, T, steps + 1)
