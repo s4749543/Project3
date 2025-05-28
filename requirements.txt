@@ -7,3 +7,6 @@ requests
 matplotlib
 datetime
 networkx
+google-generativeai
+google
+google.generativeai
